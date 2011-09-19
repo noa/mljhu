@@ -97,7 +97,7 @@ class GenerateMachineLearningPeopleList:
 				instructor = instructor.strip()
 				if instructor in instructor_to_proper_name:
 					instructor = instructor_to_proper_name[instructor]
-				instructors_list.append(instructor)
+				instructors_list.append(self.getStandardInstructorName(instructor))
 			instructors = ', '.join(instructors_list)
 			output_file.write('<li>%s %s: <a href="%s" target="_blank">%s</a>&nbsp;&nbsp;<em>%s</em></li>' % (department, id, url, title, instructors))
 
@@ -213,6 +213,18 @@ class GenerateMachineLearningPeopleList:
 	def getColumn(self, entry, names_to_columns, column):
 		return entry[names_to_columns[column]]
 		
+	def getStandardInstructorName(self,name):
+		''' IN: Name in FIRST (MIDDLE) LAST format 
+		    OUT: LAST, FIRST (MIDDLE) with standardized
+		         punctuation and case '''
+		if name == None or name == "":
+			return ""
+		tokens = [ tok.strip().capitalize() for tok in name.split() ]
+		if len(tokens) == 2:
+			return tokens[1] + ', ' + tokens[0]
+		else:
+			return tokens[-1] + ', ' + tokens[0:-1]
+
 	def run(self):
 		if len(sys.argv) != 5:
 			print 'usage: %s google_username google_password faculty_output courses_output' % sys.argv[0]
