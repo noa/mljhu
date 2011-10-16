@@ -63,8 +63,7 @@ class GenerateMachineLearningPeopleList:
 		
 		# substitute the spreadsheets token into our client
 		docs_token = client.auth_token
-		client.auth_token = gdata.gauth.ClientLoginToken(spreadsheets_client.GetClientLoginToken())
-		
+		client.auth_token = gdata.gauth.ClientLoginToken(spreadsheets_client.GetClientLoginToken())		
 		
 		# The people csv
 		client.Export(entry, people_file_path, gid=1)
@@ -97,9 +96,14 @@ class GenerateMachineLearningPeopleList:
 				instructor = instructor.strip()
 				if instructor in instructor_to_proper_name:
 					instructor = instructor_to_proper_name[instructor]
-				instructors_list.append(self.getStandardInstructorName(instructor))
-			instructors = ', '.join(instructors_list)
-			output_file.write('<li>%s %s: <a href="%s" target="_blank">%s</a>&nbsp;&nbsp;<em>%s</em></li>' % (department, id, url, title, instructors))
+#				instructors_list.append(self.getStandardInstructorName(instructor))
+                                instructors_list.append(self.getInstructorNames(instructor))
+			instructors = '; '.join(instructors_list)
+#			output_file.write('<li>%s %s: <a href="%s" target="_blank">%s</a>&nbsp;&nbsp;<em>%s</em></li>' % (department, id, url, title, instructors))
+                        if url == '' or url == None:
+                                output_file.write('<li>%s %s: <a href="https://isis.jhu.edu/classes/" target="_blank">%s</a>&nbsp;&nbsp;%s</li>' % (department, id, url, title, instructors))
+                        else:
+                                output_file.write('<li>%s %s: <a href="%s" target="_blank">%s</a>&nbsp;&nbsp;%s</li>' % (department, id, url, title, instructors))
 
 		output_file.write('</ul>')
 		output_file.write(suffix_text)
@@ -213,13 +217,37 @@ class GenerateMachineLearningPeopleList:
 	def getColumn(self, entry, names_to_columns, column):
 		return entry[names_to_columns[column]]
 		
+        def getInstructorNames(self,names):
+                namelist = names.split(';')
+                assert len(namelist) > 0
+                std_namelist = []
+                for name in namelist:
+                        std_namelist.append(self.getStandardInstructorName(name))
+                assert len(std_namelist) > 0
+                return "; ".join(std_namelist)
+
 	def getStandardInstructorName(self,name):
 		''' IN: Name in FIRST (MIDDLE) LAST format 
 		    OUT: LAST, FIRST (MIDDLE) with standardized
 		         punctuation and case '''
 		if name == None or name == "":
 			return ""
-		tokens = [ tok.strip().capitalize() for tok in name.split() ]
+
+		#tokens = [ tok.strip().capitalize() for tok in name.split() ]
+                tokens = [ tok.strip().upper() for tok in name.split() ]
+
+                # Take the first initial of the first name
+                tokens[0] = tokens[0][0]
+
+                tmp = []
+                for tok in tokens:
+                        if len(tok) == 1:
+                                tmp.append(tok + ".")
+                        else:
+                                tmp.append(tok)
+
+                tokens = tmp
+                
 		if len(tokens) == 2:
 			return tokens[1] + ', ' + tokens[0]
 		else:
@@ -230,12 +258,10 @@ class GenerateMachineLearningPeopleList:
 			print 'usage: %s google_username google_password faculty_output courses_output' % sys.argv[0]
 			sys.exit()
 			
-		
 		google_username = sys.argv[1]
 		google_password = sys.argv[2]
 		faculty_output_filename = sys.argv[3]
 		courses_output_filename = sys.argv[4]
-		
 		
 		faculty_input_filename, courses_input_filename, courses_category_text_file_path = self.getGoogleSpreadsheet(google_username, google_password)
 		faculty_input_file = open(faculty_input_filename)
