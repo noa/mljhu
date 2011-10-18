@@ -4,7 +4,7 @@
 This script connects directly to the google spreadsheet. You need the following library:
 http://code.google.com/apis/documents/docs/3.0/developers_guide_python.html
 '''
-import sys, os, csv, tempfile, getpass
+import sys, os, csv, tempfile
 import gdata.spreadsheet.service
 import gdata.docs.data
 import gdata.docs.client
@@ -12,18 +12,11 @@ import gdata.docs.client
 class GenerateMachineLearningPeopleList:
 	def __init__(self):
 		#self.text = '''<tr><td align="center"><h3><span class="Apple-style-span" style="font-size: 11px; font-weight: normal;">%s </span></h3></td><td><span class="Apple-style-span" style="font-size: 16px; font-weight: bold;">%s</span><br /> <span class="Apple-style-span" style="font-size: 11px; font-weight: normal;">%s%s</span><br /> %s<br /> <strong>Email | Website:</strong> %s (at) %s | <strong><a href="%s">website</a></strong><br /> <strong>Research interests</strong>: %s<br /> <strong>Applications</strong>: %s%s</td></tr>'''
-		# This text has a table. But it isn't showing up correctly on the theme we are using.
 		self.text = '''<tr valign="top"><td align="right" width="150"><a href="%s" target="_blank">%s</a></td><td align="left" width="10"></td>'''+ \
 					'''<td align="left"><a href="%s" target="_blank"><span class="Apple-style-span" style="font-size: 16px; font-weight: bold;">%s</span></a><br />''' + \
-					'''<span class="Apple-style-span" style="font-size: 11px; font-weight: normal;">%s%s</span><br /><br /> <strong><a href="%s">Research interests</a></strong>: %s<br />''' + \
+					'''<span class="Apple-style-span" style="font-size: 11px; font-weight: normal;">%s%s</span><br /><br /> <strong>Research interests</strong>: %s<br />''' + \
 					'''<a href="research/"><strong>Applications</strong></a>: %s%s</td></tr>'''
-		
-		self.text = '''<tr valign="top"><td align="left" width="500"><a href="%s" target="_blank">%s</a>'''+ \
-					'''<br><a href="%s" target="_blank"><span class="Apple-style-span" style="font-size: 16px; font-weight: bold;">%s</span></a><br />''' + \
-					'''<span class="Apple-style-span" style="font-size: 11px; font-weight: normal;">%s%s</span><br /> <strong><a href="%s">Research interests</a></strong>: %s<br />''' + \
-					'''<a href="research/"><strong>Applications</strong></a>: %s%s<br><br></td></tr>'''
-		
-		self.photo = '<img title="%s" src="http://ml.jhu.edu/wp-content/uploads/%s" />'
+		self.photo = '<img title="%s" src="http://mljhu.files.wordpress.com/%s" />'
 		self.centers = {			
 			'IBBS': 'http://www.hopkinsmedicine.org/institute_basic_biomedical_sciences/research_centers/high_throughput_biology_hit/',
 			'CLSP' : 'http://www.clsp.jhu.edu',
@@ -103,7 +96,7 @@ class GenerateMachineLearningPeopleList:
 			for instructor in instructors.split(';'):
 				instructor = instructor.strip()
 				if instructor in instructor_to_proper_name:
-					instructor = instructor_to_proper_name[instructor.lower()]
+					instructor = instructor_to_proper_name[instructor]
 				instructors_list.append(instructor)
 			instructors = ', '.join(instructors_list)
 			output_file.write('<li>%s %s: <a href="%s" target="_blank">%s</a>&nbsp;&nbsp;<em>%s</em></li>' % (department, id, url, title, instructors))
@@ -181,10 +174,9 @@ class GenerateMachineLearningPeopleList:
 			if teaching:
 				teaching = '<br /> <a href="courses/"><strong>Teaching</strong></a>: %s' % teaching
 			
-			research_interests_url = url
 
 			#text_to_write = self.text % (photo, name.strip(), department.strip(), centers.strip(), main_text.strip(), email_username.strip(), email_domainname.strip(), url.strip(), research_interests.strip(), applications.strip(), teaching.strip())
-			text_to_write = self.text % (url.strip(), photo.strip(), url.strip(), name.strip(), department.strip(), centers.strip(), research_interests_url, research_interests.strip(), applications.strip(), teaching.strip())
+			text_to_write = self.text % (url.strip(), photo.strip(), url.strip(), name.strip(), department.strip(), centers.strip(), research_interests.strip(), applications.strip(), teaching.strip())
 			faculty_output_file.write(text_to_write)
 			faculty_output_file.write('\n')
 			num_names += 1
@@ -222,15 +214,15 @@ class GenerateMachineLearningPeopleList:
 		return entry[names_to_columns[column]]
 		
 	def run(self):
-		if len(sys.argv) != 3:
-			print 'usage: %s faculty_output courses_output' % sys.argv[0]
+		if len(sys.argv) != 5:
+			print 'usage: %s google_username google_password faculty_output courses_output' % sys.argv[0]
 			sys.exit()
-
-		faculty_output_filename = sys.argv[1]
-		courses_output_filename = sys.argv[2]
 			
-		google_username = raw_input('Google Username (including domain): ').strip()
-		google_password = getpass.getpass('Google Password: ').strip()
+		
+		google_username = sys.argv[1]
+		google_password = sys.argv[2]
+		faculty_output_filename = sys.argv[3]
+		courses_output_filename = sys.argv[4]
 		
 		
 		faculty_input_filename, courses_input_filename, courses_category_text_file_path = self.getGoogleSpreadsheet(google_username, google_password)
