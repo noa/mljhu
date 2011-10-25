@@ -108,7 +108,7 @@ class GenerateMachineLearningPeopleList:
 			instructors = '; '.join(instructors_list)
 #			output_file.write('<li>%s %s: <a href="%s" target="_blank">%s</a>&nbsp;&nbsp;<em>%s</em></li>' % (department, id, url, title, instructors))
 			if url == '' or url == None:
-            	output_file.write('<li>%s %s: <a href="https://isis.jhu.edu/classes/" target="_blank">%s</a>&nbsp;&nbsp;%s</li>' % (department, id, url, title, instructors))
+				output_file.write('<li>%s %s: <a href="https://isis.jhu.edu/classes/" target="_blank">%s</a>&nbsp;&nbsp;%s</li>' % (department, id, title, instructors))
 			else:
 				output_file.write('<li>%s %s: <a href="%s" target="_blank">%s</a>&nbsp;&nbsp;%s</li>' % (department, id, url, title, instructors))
 
