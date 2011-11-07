@@ -9,6 +9,62 @@ import gdata.spreadsheet.service
 import gdata.docs.data
 import gdata.docs.client
 
+def getUsernameAndPassword():
+	google_username = raw_input('Google Username (including domain): ').strip()
+	google_password = getpass.getpass('Google Password: ').strip()
+
+	return google_username, google_password
+
+def getGoogleSpreadsheet(username, password, spreadsheet_key, gids):
+	#file, people_file_path = tempfile.mkstemp(suffix='.csv')
+	#os.close(file)
+	#file, courses_file_path = tempfile.mkstemp(suffix='.csv')
+	#os.close(file)
+	#file, courses_category_text_file_path = tempfile.mkstemp(suffix='.csv')
+	#os.close(file)
+					
+	# Authorize this client
+	client = gdata.docs.client.DocsClient()
+	client.ssl = True  # Force all API requests through HTTPS
+	client.http_client.debug = False  # Set to True for debugging HTTP requests
+	client.ClientLogin(username, password, client.source);
+	
+	# Authorize the client for spreadsheet access.
+	spreadsheets_client = gdata.spreadsheet.service.SpreadsheetsService()
+	spreadsheets_client.ClientLogin(username, password, client.source)
+	
+	# Specify which Google Spreadsheet to download.
+	entry = client.GetDoc(spreadsheet_key)
+	
+	# substitute the spreadsheets token into our client
+	docs_token = client.auth_token
+	client.auth_token = gdata.gauth.ClientLoginToken(spreadsheets_client.GetClientLoginToken())		
+	
+	filepaths = []
+	for gid in gids:
+		file, filepath = tempfile.mkstemp(suffix='.csv')
+		os.close(file)
+		client.Export(entry, filepath, gid=gid)
+		filepaths.append(filepath)
+		
+	# The people csv
+	#client.Export(entry, people_file_path, gid=1)
+	
+	# The courses csv
+	#client.Export(entry, courses_file_path, gid=3)
+	
+	# The course category text csv files
+	#client.Export(entry, courses_category_text_file_path, gid=4)
+	
+	client.auth_token = docs_token  # reset the DocList auth token
+	
+	return filepaths
+	#return people_file_path, courses_file_path, courses_category_text_file_path
+	
+def checkField(value, key, name):
+	if value == None:
+		print 'Missing %s for %s.' % (key, name)
+		
 class GenerateMachineLearningPeopleList:
 	def __init__(self):
 		#self.text = '''<tr><td align="center"><h3><span class="Apple-style-span" style="font-size: 11px; font-weight: normal;">%s </span></h3></td><td><span class="Apple-style-span" style="font-size: 16px; font-weight: bold;">%s</span><br /> <span class="Apple-style-span" style="font-size: 11px; font-weight: normal;">%s%s</span><br /> %s<br /> <strong>Email | Website:</strong> %s (at) %s | <strong><a href="%s">website</a></strong><br /> <strong>Research interests</strong>: %s<br /> <strong>Applications</strong>: %s%s</td></tr>'''
@@ -32,6 +88,7 @@ class GenerateMachineLearningPeopleList:
 			'CISST' : 'http://www.cisst.org/',
 			'LCSR' : 'https://lcsr.jhu.edu/',
 			'CIS' : 'http://www.cis.jhu.edu/',
+			'IGM' : 'http://www.hopkinsmedicine.org/geneticmedicine/',
 		}
 		self.department_urls = {
 			'Computer Science': 'http://www.cs.jhu.edu',
@@ -45,45 +102,13 @@ class GenerateMachineLearningPeopleList:
 			'Chemical and Biomolecular Engineering' : 'http://www.jhu.edu/chembe/',
 			'Biostatistics' : 'http://www.biostat.jhsph.edu/',
 			'Molecular Microbiology and Immunology' : 'http://www.jhsph.edu/dept/mmi/',
+			'Epidemiology': 'http://www.jhsph.edu/dept/epi', 
 		}
+		self.include_full_details_for_all = False
+		self.spreadsheet_key = 'spreadsheet:0Ai_9m7n8XhYKdGZwTlQyWFNudkREVWtTbDBMRkRnc1E'
+		self.gids = [1,3,4]
 	
-	def getGoogleSpreadsheet(self, username, password):
-		file, people_file_path = tempfile.mkstemp(suffix='.csv')
-		os.close(file)
-		file, courses_file_path = tempfile.mkstemp(suffix='.csv')
-		os.close(file)
-		file, courses_category_text_file_path = tempfile.mkstemp(suffix='.csv')
-		os.close(file)
-						
-		# Authorize this client
-		client = gdata.docs.client.DocsClient()
-		client.ssl = True  # Force all API requests through HTTPS
-		client.http_client.debug = False  # Set to True for debugging HTTP requests
-		client.ClientLogin(username, password, client.source);
-		
-		# Authorize the client for spreadsheet access.
-		spreadsheets_client = gdata.spreadsheet.service.SpreadsheetsService()
-		spreadsheets_client.ClientLogin(username, password, client.source)
-		
-		# Specify which Google Spreadsheet to download.
-		entry = client.GetDoc('spreadsheet:0Ai_9m7n8XhYKdGZwTlQyWFNudkREVWtTbDBMRkRnc1E')
-		
-		# substitute the spreadsheets token into our client
-		docs_token = client.auth_token
-		client.auth_token = gdata.gauth.ClientLoginToken(spreadsheets_client.GetClientLoginToken())		
-		
-		# The people csv
-		client.Export(entry, people_file_path, gid=1)
-		
-		# The courses csv
-		client.Export(entry, courses_file_path, gid=3)
-		
-		# The course category text csv files
-		client.Export(entry, courses_category_text_file_path, gid=4)
-		
-		client.auth_token = docs_token  # reset the DocList auth token
-		
-		return people_file_path, courses_file_path, courses_category_text_file_path
+	
 		
 
 	def generateCourseCategory(self, output_file, course_list, arg_subcategory, instructor_to_proper_name, courses_names_to_columns, prefix_text, suffix_text):
@@ -131,6 +156,13 @@ class GenerateMachineLearningPeopleList:
 			photo = self.getColumn(entry, faculty_names_to_columns, 'photo')
 			departments = self.getColumn(entry, faculty_names_to_columns, 'department')
 			category = self.getColumn(entry, faculty_names_to_columns, 'category')
+			include_full_details = self.getColumn(entry, faculty_names_to_columns, 'include_full_details')
+			if include_full_details or self.include_full_details_for_all:
+				include_full_details = True
+			else:
+				include_full_details = False
+				research_interests = ''
+				applications = ''
 
 			name = name.strip()
 			if photo.strip() == '':
@@ -138,12 +170,12 @@ class GenerateMachineLearningPeopleList:
 			else:
 				photo = self.photo % (name.strip(), photo)
 
-			if centers != '':
+			if centers:
 				new_centers = []
 				for center in centers.split(';'):
 					center = center.strip()
 					if center not in self.centers:
-						print 'Missing ', center
+						print 'Missing center: ', center
 					center_url = self.centers[center]
 					center_text = '<a href="%s" target="_blank">%s</a>' % (center_url, center)
 					new_centers.append(center_text)
@@ -153,7 +185,9 @@ class GenerateMachineLearningPeopleList:
 			departments_list = []
 			for department in departments.split(';'):
 				department = department.strip()
-				if department not in self.department_urls:
+				if not department:
+					print 'No department listed for ' + name
+				elif department not in self.department_urls:
 					print 'Unknown department: ' + department
 					department = '%s' % (department)
 				else:
@@ -181,11 +215,27 @@ class GenerateMachineLearningPeopleList:
 						course_string = '%s %s: %s' % (course_department, course_id, course_title)
 					teaching_output.append(course_string)
 				teaching = ', ' .join(teaching_output)
-	
+				
+			#if not include_full_details:
+			#	teaching = '<br /> <a href="courses/"><strong>Teaching</strong></a>:'
+				
 			if teaching:
 				teaching = '<br /> <a href="courses/"><strong>Teaching</strong></a>: %s' % teaching
 			
 			research_interests_url = url
+
+			if not centers:
+				centers = ''
+			if not url:
+				url = '#'
+			#checkField(url, 'url', name)
+			checkField(photo, 'photo', name)
+			checkField(name, 'name', name)
+			checkField(department, 'department', name)
+			#checkField(centers, 'centers', name)
+			checkField(research_interests, 'research_interests', name)
+			checkField(applications, 'applications', name)
+			checkField(teaching, 'teaching', name)
 
 			#text_to_write = self.text % (photo, name.strip(), department.strip(), centers.strip(), main_text.strip(), email_username.strip(), email_domainname.strip(), url.strip(), research_interests.strip(), applications.strip(), teaching.strip())
 			text_to_write = self.text % (url.strip(), photo.strip(), url.strip(), name.strip(), department.strip(), centers.strip(), research_interests_url, research_interests.strip(), applications.strip(), teaching.strip())
@@ -223,16 +273,20 @@ class GenerateMachineLearningPeopleList:
 		return map
 	
 	def getColumn(self, entry, names_to_columns, column):
-		return entry[names_to_columns[column]]
+		index = names_to_columns[column]
+		if index >= len(entry):
+			return None
+		return entry[index]
 		
-        def getInstructorNames(self,names):
-                namelist = names.split(';')
-                assert len(namelist) > 0
-                std_namelist = []
-                for name in namelist:
-                        std_namelist.append(self.getStandardInstructorName(name))
-                assert len(std_namelist) > 0
-                return "; ".join(std_namelist)
+	def getInstructorNames(self,names):
+		namelist = names.split(';')
+		assert len(namelist) > 0
+		std_namelist = []
+		for name in namelist:
+			#std_namelist.append(self.getStandardInstructorName(name))
+			std_namelist.append(name)
+		assert len(std_namelist) > 0
+		return "; ".join(std_namelist)
 
 	def getStandardInstructorName(self,name):
 		''' IN: Name in FIRST (MIDDLE) LAST format 
@@ -268,11 +322,11 @@ class GenerateMachineLearningPeopleList:
 
 		faculty_output_filename = sys.argv[1]
 		courses_output_filename = sys.argv[2]
-			
-		google_username = raw_input('Google Username (including domain): ').strip()
-		google_password = getpass.getpass('Google Password: ').strip()
 		
-		faculty_input_filename, courses_input_filename, courses_category_text_file_path = self.getGoogleSpreadsheet(google_username, google_password)
+		google_username, google_password = getUsernameAndPassword()
+		
+		faculty_input_filename, courses_input_filename, courses_category_text_file_path = \
+				getGoogleSpreadsheet(google_username, google_password, self.spreadsheet_key, self.gids)
 		faculty_input_file = open(faculty_input_filename)
 		faculty_reader = csv.reader(faculty_input_file)
 		faculty_output_file = open(faculty_output_filename, 'w')
@@ -300,6 +354,8 @@ class GenerateMachineLearningPeopleList:
 			course_list = category_to_subcategory[category].setdefault(subcategory, [])
 			course_list.append((department, entry))
 			
+			if not instructor:
+				print 'Missing instructor for %s' % self.getColumn(entry, courses_names_to_columns, 'title')
 			instructor_list = self.instructor_to_course_entry.setdefault(instructor.lower(), [])
 			instructor_list.append(entry)
 				
@@ -363,9 +419,9 @@ class GenerateMachineLearningPeopleList:
 		
 		
 		num_names = 0
-		#num_names += self.generateFacultyCategory(faculty_output_file, core_faculty_list, 'Core', faculty_names_to_columns, courses_names_to_columns)
-		#num_names += self.generateFacultyCategory(faculty_output_file, affiliated_faculty_list, 'Affiliated', faculty_names_to_columns, courses_names_to_columns)
-		num_names += self.generateFacultyCategory(faculty_output_file, affiliated_faculty_list, '', faculty_names_to_columns, courses_names_to_columns)
+		num_names += self.generateFacultyCategory(faculty_output_file, core_faculty_list, 'Core', faculty_names_to_columns, courses_names_to_columns)
+		num_names += self.generateFacultyCategory(faculty_output_file, affiliated_faculty_list, 'Affiliated', faculty_names_to_columns, courses_names_to_columns)
+		#num_names += self.generateFacultyCategory(faculty_output_file, affiliated_faculty_list, '', faculty_names_to_columns, courses_names_to_columns)
 		
 		faculty_output_file.close()
 		faculty_input_file.close()
