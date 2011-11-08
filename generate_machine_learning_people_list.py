@@ -74,7 +74,7 @@ class GenerateMachineLearningPeopleList:
 					'''<span class="Apple-style-span" style="font-size: 11px; font-weight: normal;">%s%s</span><br /><br /> <strong><a href="%s">Research interests</a></strong>: %s<br />''' + \
 					'''<a href="research/"><strong>Applications</strong></a>: %s%s</td></tr>'''
 		
-		self.text = '''<tr valign="top"><td align="left" width="500"><a href="%s" target="_blank">%s</a>'''+ \
+		self.text = '''<tr valign="top"><td align="left"><a href="%s" target="_blank">%s</a>'''+ \
 					'''<br><a href="%s" target="_blank"><span class="Apple-style-span" style="font-size: 16px; font-weight: bold;">%s</span></a><br />''' + \
 					'''<span class="Apple-style-span" style="font-size: 11px; font-weight: normal;">%s%s</span><br /> <strong><a href="%s">Research interests</a></strong>: %s<br />''' + \
 					'''<a href="research/"><strong>Applications</strong></a>: %s%s<br><br></td></tr>'''
@@ -103,6 +103,7 @@ class GenerateMachineLearningPeopleList:
 			'Biostatistics' : 'http://www.biostat.jhsph.edu/',
 			'Molecular Microbiology and Immunology' : 'http://www.jhsph.edu/dept/mmi/',
 			'Epidemiology': 'http://www.jhsph.edu/dept/epi', 
+			'Health Policy and Management' : 'http://www.jhsph.edu/dept/hpm/',
 		}
 		self.include_full_details_for_all = False
 		self.spreadsheet_key = 'spreadsheet:0Ai_9m7n8XhYKdGZwTlQyWFNudkREVWtTbDBMRkRnc1E'
@@ -366,6 +367,7 @@ class GenerateMachineLearningPeopleList:
 		instructor_to_proper_name = {}
 		core_faculty_list = []
 		affiliated_faculty_list = []
+		research_scientists_list = []
 		faculty_names_to_columns = {}
 		for ii, entry in enumerate(faculty_reader):
 			if ii == 0:
@@ -379,13 +381,16 @@ class GenerateMachineLearningPeopleList:
 				core_faculty_list.append((name.split()[-1], entry))
 			elif category.lower() == 'affiliated':
 				affiliated_faculty_list.append((name.split()[-1], entry))
+			elif category.lower() == 'scientist':
+				research_scientists_list.append((name.split()[-1], entry))
 			else:
 				print 'Unknown category: %s' % category
 			
 			instructor_to_proper_name[name.lower()] = name
 			
+		core_faculty_list.sort()	
 		affiliated_faculty_list.sort()
-		
+		research_scientists_list.sort()
 		
 		ordered_categories = ['Core Machine Learning', 'Applied Machine Learning']
 		for category in category_to_subcategory.keys():
@@ -419,8 +424,9 @@ class GenerateMachineLearningPeopleList:
 		
 		
 		num_names = 0
-		num_names += self.generateFacultyCategory(faculty_output_file, core_faculty_list, 'Core', faculty_names_to_columns, courses_names_to_columns)
-		num_names += self.generateFacultyCategory(faculty_output_file, affiliated_faculty_list, 'Affiliated', faculty_names_to_columns, courses_names_to_columns)
+		num_names += self.generateFacultyCategory(faculty_output_file, core_faculty_list, 'Core Faculty', faculty_names_to_columns, courses_names_to_columns)
+		num_names += self.generateFacultyCategory(faculty_output_file, affiliated_faculty_list, 'Affiliated Faculty', faculty_names_to_columns, courses_names_to_columns)
+		num_names += self.generateFacultyCategory(faculty_output_file, research_scientists_list, 'Research Scientists', faculty_names_to_columns, courses_names_to_columns)
 		#num_names += self.generateFacultyCategory(faculty_output_file, affiliated_faculty_list, '', faculty_names_to_columns, courses_names_to_columns)
 		
 		faculty_output_file.close()
