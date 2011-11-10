@@ -4,8 +4,10 @@
 This script connects directly to the google spreadsheet. You need the following library:
 http://code.google.com/apis/documents/docs/3.0/developers_guide_python.html
 '''
-import sys, os, csv
+import sys, os, csv, codecs
 from datetime import datetime 
+
+from unicode_csv_reader import unicode_csv_reader
 
 from generate_machine_learning_people_list import getUsernameAndPassword, getGoogleSpreadsheet
 
@@ -36,8 +38,9 @@ class CsvLoader:
 		return self.names_to_columns.keys()
 		
 	def __loadFile(self, filename):
-		file = open(filename)
-		reader = csv.reader(file)
+		file = codecs.open(filename, 'r', 'utf-8')
+		#reader = csv.reader(file)
+		reader = unicode_csv_reader(file)
 		
 		self.contents = []
 		
@@ -140,7 +143,8 @@ function toggle_visibility(id) {
 		return talks
 	
 	def generateTalksPage(self, filename, talks):
-		file = open(filename, 'w')
+		file = codecs.open(filename, mode='w', encoding='utf-8')
+		#file = open(filename, 'w')
 		
 		file.write(self.preamble)
 		
@@ -158,6 +162,7 @@ function toggle_visibility(id) {
 			bio = talk['bio']
 			other = talk['other']
 			host = talk['host']
+			
 			
 			bio  = cleanField(bio)
 			abstract = cleanField(abstract)
@@ -184,7 +189,9 @@ function toggle_visibility(id) {
 			
 			output_string = self.talk_template % (date_string, time_string, location, id, title, \
 												  speaker, affiliation, id, abstract, bio, other, forum)
+			
 			output_strings.append(output_string)
+			
 		
 		all_functions_collapse = []
 		all_functions_expand = []
@@ -197,13 +204,14 @@ function toggle_visibility(id) {
 		all_functions_collapse = ';'.join(all_functions_collapse)
 		file.write('''<a onclick="%s; return false;" href="#">Expand All</a>/<a onclick="%s; return false;" href="#">Collapse All</a><br><br>''' % (all_functions_expand, all_functions_collapse))
 		
-		file.write('\n'.join(output_strings))
+		output_string = '\n'.join(output_strings)
+		file.write(output_string)
 		
 		file.close()
 		
 	
 	def generateWidget(self, filename, talks, num_talks=5):
-		file = open(filename, 'w')
+		file = codecs.open(filename, 'w', 'utf-8')
 		
 		file.write('<ul>')
 		for ii, talk in enumerate(talks[:num_talks]):

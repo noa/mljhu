@@ -69,13 +69,19 @@ class GenerateMachineLearningPeopleList:
 	def __init__(self):
 		#self.text = '''<tr><td align="center"><h3><span class="Apple-style-span" style="font-size: 11px; font-weight: normal;">%s </span></h3></td><td><span class="Apple-style-span" style="font-size: 16px; font-weight: bold;">%s</span><br /> <span class="Apple-style-span" style="font-size: 11px; font-weight: normal;">%s%s</span><br /> %s<br /> <strong>Email | Website:</strong> %s (at) %s | <strong><a href="%s">website</a></strong><br /> <strong>Research interests</strong>: %s<br /> <strong>Applications</strong>: %s%s</td></tr>'''
 		# This text has a table. But it isn't showing up correctly on the theme we are using.
-		self.text = '''<tr valign="top"><td align="right" width="150"><a href="%s" target="_blank">%s</a></td><td align="left" width="10"></td>'''+ \
-					'''<td align="left"><a href="%s" target="_blank"><span class="Apple-style-span" style="font-size: 16px; font-weight: bold;">%s</span></a><br />''' + \
-					'''<span class="Apple-style-span" style="font-size: 11px; font-weight: normal;">%s%s</span><br /><br /> <strong><a href="%s">Research interests</a></strong>: %s<br />''' + \
-					'''<a href="research/"><strong>Applications</strong></a>: %s%s</td></tr>'''
+		#self.text = '''<tr valign="top"><td align="right" width="150"><a href="%s" target="_blank">%s</a></td><td align="left" width="10"></td>'''+ \
+		#			'''<td align="left"><a href="%s" target="_blank"><span class="Apple-style-span" style="font-size: 16px; font-weight: bold;">%s</span></a><br />''' + \
+		#			'''<span class="Apple-style-span" style="font-size: 11px; font-weight: normal;">%s%s</span><br /><br /> <strong><a href="%s">Research interests</a></strong>: %s<br />''' + \
+		#			'''<a href="research/"><strong>Applications</strong></a>: %s%s</td></tr>'''
 		
-		self.text = '''<tr valign="top"><td align="left"><a href="%s" target="_blank">%s</a>'''+ \
-					'''<br><a href="%s" target="_blank"><span class="Apple-style-span" style="font-size: 16px; font-weight: bold;">%s</span></a><br />''' + \
+		#self.text = '''<tr valign="top"><td align="left"><a href="%s" target="_blank">%s</a>'''+ \
+		#			'''<br><a href="%s" target="_blank"><span class="Apple-style-span" style="font-size: 16px; font-weight: bold;">%s</span></a><br />''' + \
+		#			'''<span class="Apple-style-span" style="font-size: 11px; font-weight: normal;">%s%s</span><br /> <strong><a href="%s">Research interests</a></strong>: %s<br />''' + \
+		#			'''<a href="research/"><strong>Applications</strong></a>: %s%s<br><br></td></tr>'''
+		
+		self.text = '''<tr><td style="vertical-align:top;"><a href="%s" target="_blank">%s</a><br><br></td>'''+ \
+					'''<td width="10">&nbsp;</td>''' + \
+					'''<td style="vertical-align:middle;"><a href="%s" target="_blank"><span class="Apple-style-span" style="font-size: 16px; font-weight: bold;">%s</span></a><br />''' + \
 					'''<span class="Apple-style-span" style="font-size: 11px; font-weight: normal;">%s%s</span><br /> <strong><a href="%s">Research interests</a></strong>: %s<br />''' + \
 					'''<a href="research/"><strong>Applications</strong></a>: %s%s<br><br></td></tr>'''
 		
@@ -104,6 +110,7 @@ class GenerateMachineLearningPeopleList:
 			'Molecular Microbiology and Immunology' : 'http://www.jhsph.edu/dept/mmi/',
 			'Epidemiology': 'http://www.jhsph.edu/dept/epi', 
 			'Health Policy and Management' : 'http://www.jhsph.edu/dept/hpm/',
+			'Cognitive Science': 'http://cogsci.jhu.edu/',
 		}
 		self.include_full_details_for_all = False
 		self.spreadsheet_key = 'spreadsheet:0Ai_9m7n8XhYKdGZwTlQyWFNudkREVWtTbDBMRkRnc1E'
@@ -146,7 +153,7 @@ class GenerateMachineLearningPeopleList:
 					
 	def generateFacultyCategory(self, faculty_output_file, faculty_list, category, faculty_names_to_columns, courses_names_to_columns):
 		num_names = 0
-		faculty_output_file.write('<h1>%s</h1><table border="0" bgcolor="#F3F0E9"><tbody>' % category)
+		faculty_output_file.write('<h1>%s</h1><table border="0"><tbody>' % category)
 		
 		for last_name, entry in faculty_list:
 			name = self.getColumn(entry, faculty_names_to_columns, 'name')
@@ -180,7 +187,7 @@ class GenerateMachineLearningPeopleList:
 					center_url = self.centers[center]
 					center_text = '<a href="%s" target="_blank">%s</a>' % (center_url, center)
 					new_centers.append(center_text)
-				centers = '&nbsp;|&nbsp;' + ', '.join(new_centers)
+				centers = '&nbsp;|&nbsp; Centers: ' + ', '.join(new_centers)
 			
 
 			departments_list = []
@@ -197,7 +204,7 @@ class GenerateMachineLearningPeopleList:
 
 				departments_list.append(department)
 
-			department = ', '.join(departments_list)
+			department = 'Dept: ' + ', '.join(departments_list)
 			
 			teaching = ''
 			if name.lower() in self.instructor_to_course_entry:
