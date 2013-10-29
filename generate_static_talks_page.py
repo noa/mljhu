@@ -68,19 +68,18 @@ class GenerateStaticTalksPage:
 	def __init__(self):
 		self.spreadsheet_key = 'spreadsheet:0AgLn69AE8GTVdFVRMjQ1QmxnVHJiRWdKVC12QU8wRUE'
 		self.gids = [0]
-		self.talks_page_header_text = '''Johns Hopkins regularly hosts prominent machine learning researchers as part of ongoing seminar series. 
-		<br><br>
-		Click on a talk title for details.
-		<br><br>
-		To receive talk announcements and other ML@JHU announcements, email contact _AT_ ml.jhu.edu.<br><br>'''
+		self.talks_page_header_text = '''Click on a talk title for details. To receive talk announcements by email, <a href="http://ml.jhu.edu/signup-announce/">sign up for our mailing list.</a> In return, please forward announcements of ML-related talks to announce (at) ml.jhu.edu.<br><br>'''
 		
-		self.forum_text = { 'CLSP (Center for Language and Speech Processing)': ('http://clsp.jhu.edu/news-events/seminars.php', 'CLSP'),
+		
+		self.forum_text = { 'CLSP (Center for Language and Speech Processing)': ('http://www.clsp.jhu.edu/seminars/', 'CLSP'),
 							'CS (Computer Science)': ('http://cs.jhu.edu/calendar/', 'CS'),
 							'CIS (Center for Imaging Science)': ('http://cis.jhu.edu/seminars/', 'CIS'),
+							'ECE (Electrical and Computer Engineering)': ('http://www.ece-jhu.org/index.php/seminars', 'ECE'),
 							'LCSR (Laboratory for Computational Sensing and Robotics)': ('https://www.lcsr.jhu.edu/LCSR_CISST_Seminars', 'LCSR'),
 							'HLTCOE (Human Language Technology Center of Excellence)': ('http://hltcoe.jhu.edu/category/talks/', 'HLTCOE'),
 							'AMS (Applied Math & Stats)': ('http://www.ams.jhu.edu/~seminar/', 'AMS'),
 							'CogSci (Cognitive Science)': ('http://cogsci.jhu.edu/events/', 'CogSci'),
+							'Biostatistics': ('http://www.biostat.jhsph.edu/newsEvent/event/seminar/seminars.shtml', 'Biostatistics'),
 		}
 		
 		self.preamble = '''<script type="text/javascript">// <![CDATA[
@@ -127,10 +126,34 @@ function toggle_visibility(id) {
 
 	def sortTalks(self, talks):
 		talks_list = []
+		patterns = [
+					'%a %m/%d/%y, %I:%M%p',
+					'%m/%d/%Y, %I:%M%p',
+					'%m/%d/%y, %I:%M%p',
+					'%m/%d/%y',
+					'%m/%d/%Y',
+					]
 		for talk in talks:
-			date = talk['date']
-			date = date[date.find(' ')+1:]
-			date_obj = datetime.strptime(date, '%m/%d/%y, %I:%M%p')
+			date = talk['date'].strip()
+			stripped_date = date[date.find(' ')+1:]
+			date_obj = None
+			for pattern in patterns:
+				try:
+					date_obj = datetime.strptime(date, pattern)
+				except:
+					pass
+				if date_obj != None:
+					break
+				try:
+					date_obj = datetime.strptime(stripped_date, pattern)
+				except:
+					pass
+				if date_obj != None:
+					break
+				
+			
+			if date_obj == None:
+				print 'Cannot parse: "%s" from %s' % (date, str(talk)) 
 			talk['date_obj'] = date_obj
 			talks_list.append((date_obj, talk))
 
@@ -152,16 +175,17 @@ function toggle_visibility(id) {
 		ids = []
 		output_strings = []
 		for ii, talk in enumerate(talks):
+
 			date_obj = talk['date_obj']
-			speaker = talk['speaker']
-			title = talk['title']
-			location = talk['location']
-			forum = talk['forum']
-			affiliation = talk['affiliation']
-			abstract = talk['abstract']
-			bio = talk['bio']
-			other = talk['other']
-			host = talk['host']
+			speaker = talk['speaker'].strip()
+			title = talk['title'].strip()
+			location = talk['location'].strip()
+			forum = talk['forum'].strip()
+			affiliation = talk['affiliation'].strip()
+			abstract = talk['abstract'].strip()
+			bio = talk['bio'].strip()
+			other = talk['other'].strip()
+			host = talk['host'].strip()
 			
 			
 			bio  = cleanField(bio)
@@ -189,7 +213,7 @@ function toggle_visibility(id) {
 			
 			output_string = self.talk_template % (date_string, time_string, location, id, title, \
 												  speaker, affiliation, id, abstract, bio, other, forum)
-			
+			output_string = output_string.replace('\t', ' ')
 			output_strings.append(output_string)
 			
 		

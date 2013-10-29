@@ -111,11 +111,57 @@ class GenerateMachineLearningPeopleList:
 			'Epidemiology': 'http://www.jhsph.edu/dept/epi', 
 			'Health Policy and Management' : 'http://www.jhsph.edu/dept/hpm/',
 			'Cognitive Science': 'http://cogsci.jhu.edu/',
+			'Psychological and Brain Sciences': 'http://pbs.jhu.edu/',
+			'Wilmer Eye Institute': 'http://www.hopkinsmedicine.org/wilmer/',
 		}
 		self.include_full_details_for_all = False
 		self.spreadsheet_key = 'spreadsheet:0Ai_9m7n8XhYKdGZwTlQyWFNudkREVWtTbDBMRkRnc1E'
 		self.gids = [1,3,4]
-	
+		self.filter_areas = ['Computational Biology',
+							'Natural Language',
+							'Speech',
+							'Health',
+							'Vision',
+							'Neuroscience',
+							'Robotics',
+							'Astrophysics',
+							'Network Science',
+							]
+		self.filter_areas.sort()
+		self.javascript_filter = '''<script>
+function showJustRowsContaining(text) {
+     // Refuse to restrict to fewer than 2 rows.  So "useless" clicks
+     // have no effect, nor does a garbage hash location.
+     if (jQuery("tr:contains("+text+")").length >= 2) {   
+	jQuery("tr").hide();
+	jQuery("tr:contains("+text+")").show();
+	jQuery("p:contains('more JHU faculty')").show();
+	jQuery("h1:first").html("ML People - "+text+" <span style=\\"font-size:medium;\\">[<a href=\\"javascript:void(0);\\" onClick=\\"showAllRows()\\">show all</a>]</span>");
+		document.title = "ML@JHU | People | "+text;
+        window.location.hash="#"+text;
+	window.scrollTo(0,0);
+     }
+}
+function showAllRows() {
+     jQuery("tr").show();
+     jQuery("h1:first").html("ML People");
+     jQuery("p:contains('more JHU faculty')").hide();
+     document.title = "ML@JHU | People";
+     window.location.hash="";
+     window.scrollTo(0,0);
+}
+function showHashLocation() {
+   if (self.document.location.hash != "") {
+      showJustRowsContaining(unescape(self.document.location.hash.substring(1)));
+   } else {
+	   showAllRows();
+	}
+}
+jQuery(document).ready(function() {
+        showHashLocation();
+});
+</script>
+'''
 	
 		
 
@@ -157,6 +203,7 @@ class GenerateMachineLearningPeopleList:
 		
 		for last_name, entry in faculty_list:
 			name = self.getColumn(entry, faculty_names_to_columns, 'name')
+			name = name.replace('_', ' ')
 			centers = self.getColumn(entry, faculty_names_to_columns, 'centers')
 			url = self.getColumn(entry, faculty_names_to_columns, 'url')
 			research_interests = self.getColumn(entry, faculty_names_to_columns, 'research_interests')
@@ -173,7 +220,7 @@ class GenerateMachineLearningPeopleList:
 				applications = ''
 
 			name = name.strip()
-			if photo.strip() == '':
+			if not photo or photo.strip() == '':
 				photo = '<br />'
 			else:
 				photo = self.photo % (name.strip(), photo)
@@ -189,7 +236,7 @@ class GenerateMachineLearningPeopleList:
 					new_centers.append(center_text)
 				centers = '&nbsp;|&nbsp; Centers: ' + ', '.join(new_centers)
 			
-
+			checkField(departments, 'departments', name)
 			departments_list = []
 			for department in departments.split(';'):
 				department = department.strip()
@@ -230,6 +277,8 @@ class GenerateMachineLearningPeopleList:
 			if teaching:
 				teaching = '<br /> <a href="courses/"><strong>Teaching</strong></a>: %s' % teaching
 			
+			if applications:
+				applications = self.generateApplicationFilters(applications)
 			research_interests_url = url
 
 			if not centers:
@@ -239,7 +288,7 @@ class GenerateMachineLearningPeopleList:
 			#checkField(url, 'url', name)
 			checkField(photo, 'photo', name)
 			checkField(name, 'name', name)
-			checkField(department, 'department', name)
+			
 			#checkField(centers, 'centers', name)
 			checkField(research_interests, 'research_interests', name)
 			checkField(applications, 'applications', name)
@@ -253,6 +302,18 @@ class GenerateMachineLearningPeopleList:
 		faculty_output_file.write('</tbody></table>')
 		return num_names
 	
+	def generateApplicationFilters(self, applications):
+		app_list = applications.split(',')
+		new_app_list = []
+		for app in app_list:
+			app = app.strip()
+			if app in self.filter_areas:
+				app = '''<a href="javascript:void(0);" onClick="javascript:showJustRowsContaining('%s')">%s</a>''' % (app, app)
+		
+			new_app_list.append(app)
+		
+		return ', '.join(new_app_list)
+		
 	def loadCoursesText(self, courses_category_text_file_path):
 		courses_category_text_file = open(courses_category_text_file_path)
 		reader = csv.reader(courses_category_text_file)
@@ -323,6 +384,17 @@ class GenerateMachineLearningPeopleList:
 		else:
 			return tokens[-1] + ', ' + tokens[0:-1]
 
+			
+	def writeFacultyFilter(self, faculty_output_file):
+		faculty_output_file.write(self.javascript_filter)
+		text = []
+		faculty_output_file.write('<p>Filter by application area: ')
+		for area in self.filter_areas:
+			text.append('''<a href="javascript:void(0);" onClick="javascript:showJustRowsContaining('%s')">%s</a>''' % (area, area))
+			
+		faculty_output_file.write(', '.join(text) + '</p>\n')
+		faculty_output_file.write('''<p style="margin-left: 50px;"><em>To find many more JHU faculty in each application area, follow links from the <a href="http://ml.jhu.edu/research">research</a> page. This page lists only members of the cross-cutting machine learning group.</em></p>\n''')
+
 	def run(self):
 		if len(sys.argv) != 3:
 			print 'usage: %s faculty_output courses_output' % sys.argv[0]
@@ -384,7 +456,9 @@ class GenerateMachineLearningPeopleList:
 			
 			name = self.getColumn(entry, faculty_names_to_columns, 'name').strip()
 			category = self.getColumn(entry, faculty_names_to_columns, 'category')
-			if category.lower() == 'core':
+			if not category:
+				print 'Unknown category: %s for entry %s' % (category, str(entry))
+			elif category.lower() == 'core':
 				core_faculty_list.append((name.split()[-1], entry))
 			elif category.lower() == 'affiliated':
 				affiliated_faculty_list.append((name.split()[-1], entry))
@@ -430,9 +504,11 @@ class GenerateMachineLearningPeopleList:
 			
 		
 		
+		self.writeFacultyFilter(faculty_output_file)
+		
 		num_names = 0
-		num_names += self.generateFacultyCategory(faculty_output_file, core_faculty_list, 'Core Faculty', faculty_names_to_columns, courses_names_to_columns)
-		num_names += self.generateFacultyCategory(faculty_output_file, affiliated_faculty_list, 'Affiliated Faculty', faculty_names_to_columns, courses_names_to_columns)
+		num_names += self.generateFacultyCategory(faculty_output_file, core_faculty_list, 'Core ML Faculty', faculty_names_to_columns, courses_names_to_columns)
+		num_names += self.generateFacultyCategory(faculty_output_file, affiliated_faculty_list, 'Affiliated ML Faculty', faculty_names_to_columns, courses_names_to_columns)
 		num_names += self.generateFacultyCategory(faculty_output_file, research_scientists_list, 'Research Scientists', faculty_names_to_columns, courses_names_to_columns)
 		#num_names += self.generateFacultyCategory(faculty_output_file, affiliated_faculty_list, '', faculty_names_to_columns, courses_names_to_columns)
 		
